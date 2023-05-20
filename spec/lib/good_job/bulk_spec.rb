@@ -114,5 +114,14 @@ describe GoodJob::Bulk do
       expect(job_1.provider_job_id).to be_present
       expect(job_2.provider_job_id).to be_nil
     end
+
+    it 'enqueues the jobs in the future' do
+      described_class.enqueue do
+        TestJob.set(wait: 1.hour).perform_later
+        TestJob.set(wait_until: 1.hour.from_now).perform_later
+      end
+      expect(GoodJob::Job.first.scheduled_at - Time.now).to be_between 3000, 4000
+      expect(GoodJob::Job.last.scheduled_at - Time.now).to be_between 3000, 4000
+    end
   end
 end
