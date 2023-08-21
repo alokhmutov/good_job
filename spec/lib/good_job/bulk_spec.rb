@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 describe GoodJob::Bulk do
@@ -115,13 +116,16 @@ describe GoodJob::Bulk do
       expect(job_2.provider_job_id).to be_nil
     end
 
-    it 'enqueues the jobs in the future' do
+    it 'sets queue, scheduled_at, and priority' do
       described_class.enqueue do
-        TestJob.set(wait: 1.hour).perform_later
-        TestJob.set(wait_until: 1.hour.from_now).perform_later
+        TestJob.set(queue: 'elephant', wait: 10.minutes, priority: 50).perform_later
       end
-      expect(GoodJob::Job.first.scheduled_at - Time.now).to be_between 3000, 4000
-      expect(GoodJob::Job.last.scheduled_at - Time.now).to be_between 3000, 4000
+
+      expect(GoodJob::Job.last).to have_attributes(
+        queue_name: 'elephant',
+        scheduled_at: be_within(1.second).of(10.minutes.from_now),
+        priority: 50
+      )
     end
   end
 end

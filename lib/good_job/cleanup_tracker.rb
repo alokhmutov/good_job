@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob # :nodoc:
   # Tracks thresholds for cleaning up old jobs.
   class CleanupTracker
@@ -17,7 +18,7 @@ module GoodJob # :nodoc:
     end
 
     # Increments job count.
-    # @return [void]
+    # @return [Integer]
     def increment
       self.job_count += 1
     end

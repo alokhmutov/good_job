@@ -4,12 +4,17 @@ module GoodJob
   # ActiveRecord model to share behavior between {Job} and {Execution} models
   # which both read out of the same table.
   class BaseExecution < BaseRecord
+    include AdvisoryLockable
+    include ErrorEvents
+    include Filterable
+    include Reportable
+
     self.table_name = 'good_jobs'
 
     # With a given class name
-    # @!method job_class
+    # @!method job_class(name)
     # @!scope class
-    # @param string [String] Execution class name
+    # @param name [String] Execution class name
     # @return [ActiveRecord::Relation]
     scope :job_class, ->(name) { where(params_job_class.eq(name)) }
 
@@ -35,12 +40,14 @@ module GoodJob
       end
 
       def discrete_support?
-        if connection.table_exists?(DiscreteExecution.table_name)
-          true
-        else
-          migration_pending_warning!
-          false
-        end
+        GoodJob::DiscreteExecution.migrated?
+      end
+
+      def error_event_migrated?
+        return true if columns_hash["error_event"].present?
+
+        migration_pending_warning!
+        false
       end
     end
 
@@ -52,6 +59,29 @@ module GoodJob
 
     def discrete?
       self.class.discrete_support? && is_discrete?
+    end
+
+    # Build an ActiveJob instance and deserialize the arguments, using `#active_job_data`.
+    #
+    # @param ignore_deserialization_errors [Boolean]
+    #   Whether to ignore ActiveJob::DeserializationError when deserializing the arguments.
+    #   This is most useful if you aren't planning to use the arguments directly.
+    def active_job(ignore_deserialization_errors: false)
+      ActiveJob::Base.deserialize(active_job_data).tap do |aj|
+        aj.send(:deserialize_arguments_if_needed)
+      rescue ActiveJob::DeserializationError
+        raise unless ignore_deserialization_errors
+      end
+    end
+
+    private
+
+    def active_job_data
+      serialized_params.deep_dup
+                       .tap do |job_data|
+        job_data["provider_job_id"] = id
+        job_data["good_job_concurrency_key"] = concurrency_key if concurrency_key
+      end
     end
   end
 end

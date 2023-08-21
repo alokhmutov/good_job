@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 THREAD_ERRORS = Concurrent::Array.new
 
 RSpec.configure do |config|
@@ -23,12 +24,13 @@ RSpec.configure do |config|
     GoodJob.shutdown(timeout: -1)
 
     executables = [].concat(
+      GoodJob::Capsule.instances,
+      GoodJob::SharedExecutor.instances,
       GoodJob::CronManager.instances,
       GoodJob::Notifier.instances,
       GoodJob::Poller.instances,
       GoodJob::Scheduler.instances,
-      GoodJob::CronManager.instances,
-      GoodJob::Capsule.instances
+      GoodJob::CronManager.instances
     )
     GoodJob._shutdown_all(executables, timeout: -1)
 

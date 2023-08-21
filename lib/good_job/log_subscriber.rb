@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   #
   # Listens to GoodJob notifications and logs them.
@@ -157,6 +158,24 @@ module GoodJob
 
       info do
         "GoodJob destroyed #{destroyed_records_count} preserved job execution #{'records'.pluralize(destroyed_records_count)} finished before #{timestamp}."
+      end
+    end
+
+    # @!macro notification_responder
+    def systemd_watchdog_start(event)
+      interval = event.payload[:interval]
+
+      info do
+        "Pinging systemd watchdog every #{interval.round(1)} seconds"
+      end
+    end
+
+    # @!macro notification_responder
+    def systemd_watchdog_error(event)
+      exception = event.payload[:error]
+
+      error do
+        "Error pinging systemd: #{exception.class}: #{exception}\n #{exception.backtrace}"
       end
     end
 

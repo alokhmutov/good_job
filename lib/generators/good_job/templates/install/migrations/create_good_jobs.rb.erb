@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+
 class CreateGoodJobs < ActiveRecord::Migration<%= migration_version %>
   def change
-    enable_extension 'pgcrypto'
+    # Uncomment for Postgres v12 or earlier to enable gen_random_uuid() support
+    # enable_extension 'pgcrypto'
 
     create_table :good_jobs, id: :uuid do |t|
       t.text :queue_name
@@ -26,6 +28,7 @@ class CreateGoodJobs < ActiveRecord::Migration<%= migration_version %>
       t.boolean :is_discrete
       t.integer :executions_count
       t.text :job_class
+      t.integer :error_event, limit: 2
     end
 
     create_table :good_job_batches, id: :uuid do |t|
@@ -52,6 +55,7 @@ class CreateGoodJobs < ActiveRecord::Migration<%= migration_version %>
       t.datetime :scheduled_at
       t.datetime :finished_at
       t.text :error
+      t.integer :error_event, limit: 2
     end
 
     create_table :good_job_processes, id: :uuid do |t|

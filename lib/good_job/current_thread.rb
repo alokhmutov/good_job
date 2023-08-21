@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'active_support/core_ext/module/attribute_accessors_per_thread'
 
 module GoodJob
@@ -11,8 +12,10 @@ module GoodJob
       cron_key
       error_on_discard
       error_on_retry
+      error_on_retry_stopped
       execution
       execution_interrupted
+      execution_retried
     ].freeze
 
     # @!attribute [rw] cron_at
@@ -39,6 +42,12 @@ module GoodJob
     #   @return [Exception, nil]
     thread_mattr_accessor :error_on_retry
 
+    # @!attribute [rw] error_on_retry_stopped
+    #   @!scope class
+    #   Error captured by retry_stopped
+    #   @return [Exception, nil]
+    thread_mattr_accessor :error_on_retry_stopped
+
     # @!attribute [rw] executions
     #   @!scope class
     #   Execution
@@ -50,6 +59,12 @@ module GoodJob
     #   Execution Interrupted
     #   @return [Boolean, nil]
     thread_mattr_accessor :execution_interrupted
+
+    # @!attribute [rw] execution_retried
+    #   @!scope class
+    #   Execution Retried
+    #   @return [Boolean, nil]
+    thread_mattr_accessor :execution_retried
 
     # Resets attributes
     # @param [Hash] values to assign

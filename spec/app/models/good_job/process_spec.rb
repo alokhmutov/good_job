@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe GoodJob::Process do
@@ -22,6 +23,17 @@ RSpec.describe GoodJob::Process do
     end
   end
 
+  describe '.ns_current_state' do
+    it 'contains information about the process' do
+      expect(described_class.ns_current_state).to include(
+        database_connection_pool: include(
+          size: be_an(Integer),
+          active: be_an(Integer)
+        )
+      )
+    end
+  end
+
   describe '.register' do
     it 'registers the process' do
       process = nil
@@ -33,9 +45,9 @@ RSpec.describe GoodJob::Process do
     end
 
     context 'when there is already an existing record' do
-      it 'returns nil' do
+      it 'returns the existing record' do
         described_class.create!(id: described_class.current_id)
-        expect(described_class.register).to be_nil
+        expect(described_class.register).to be_a described_class
       end
     end
   end
@@ -58,6 +70,42 @@ RSpec.describe GoodJob::Process do
     it 'preserves program arguments' do
       process.state['proctitle'] = '/Users/me/projects/good_job/bin/bundle exec rails start'
       expect(process.basename).to eq('bundle exec rails start')
+    end
+  end
+
+  describe '#refresh' do
+    it 'updates the record' do
+      process = described_class.create! state: {}, updated_at: 1.day.ago
+      expect do
+        expect(process.refresh).to be true
+      end.to change(process, :updated_at).to within(1.second).of(Time.current)
+    end
+
+    context 'when the record has been deleted elsewhere' do
+      it 'returns false' do
+        process = described_class.create! state: {}, updated_at: 1.day.ago
+        described_class.where(id: process.id).delete_all
+
+        expect(process.refresh).to be false
+      end
+    end
+  end
+
+  describe '#stale?' do
+    it 'returns true when the record is stale' do
+      process = described_class.create! state: {}, updated_at: 1.day.ago
+      expect(process.stale?).to be true
+      process.refresh
+      expect(process.stale?).to be false
+    end
+  end
+
+  describe '#expired?' do
+    it 'returns true when the record is stale' do
+      process = described_class.create! state: {}, updated_at: 1.day.ago
+      expect(process.expired?).to be true
+      process.refresh
+      expect(process.expired?).to be false
     end
   end
 end

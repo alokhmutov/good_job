@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 describe GoodJob::Batch do
@@ -27,7 +28,7 @@ describe GoodJob::Batch do
     end
 
     it 'resets callbacks' do
-      batch = described_class.new(on_finish: CallbackJob)
+      batch = described_class.new(on_finish: "CallbackJob")
       batch.enqueue { TestJob.perform_later }  # 1st time triggers callback
       GoodJob.perform_inline
       batch.enqueue { TestJob.perform_later }  # 2nd time does not trigger callback (finished_at didn't update to nil on the stale reference to batch_record)
@@ -149,6 +150,17 @@ describe GoodJob::Batch do
 
         expect(batch.callback_active_jobs.size).to eq 1
       end
+    end
+  end
+
+  describe '#active_jobs' do
+    it 'returns associated Active Jobs' do
+      batch = described_class.enqueue do
+        TestJob.perform_later
+        TestJob.perform_later
+      end
+      expect(batch.active_jobs.count).to eq 2
+      expect(batch.active_jobs).to all be_a(TestJob)
     end
   end
 end

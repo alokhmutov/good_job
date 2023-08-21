@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe GoodJob::CurrentThread do
@@ -10,6 +11,10 @@ RSpec.describe GoodJob::CurrentThread do
     :execution,
     :error_on_discard,
     :error_on_retry,
+    :error_on_retry_stopped,
+    :execution,
+    :execution_interrupted,
+    :execution_retried,
   ].each do |accessor|
     describe ".#{accessor}" do
       it 'maintains value across threads' do
@@ -56,8 +61,10 @@ RSpec.describe GoodJob::CurrentThread do
         cron_key: 'example',
         error_on_discard: false,
         error_on_retry: false,
+        error_on_retry_stopped: nil,
         execution: instance_double(GoodJob::Execution),
         execution_interrupted: nil,
+        execution_retried: nil,
       }
 
       described_class.reset(value)

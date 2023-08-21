@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   #
   # +GoodJob::Configuration+ provides normalized configuration information to
@@ -28,6 +29,8 @@ module GoodJob
     DEFAULT_ENABLE_CRON = false
     # Default to enabling LISTEN/NOTIFY
     DEFAULT_ENABLE_LISTEN_NOTIFY = true
+    # Default Dashboard I18n locale
+    DEFAULT_DASHBOARD_DEFAULT_LOCALE = :en
 
     def self.validate_execution_mode(execution_mode)
       raise ArgumentError, "GoodJob execution mode must be one of #{EXECUTION_MODES.join(', ')}. It was '#{execution_mode}' which is not valid." unless execution_mode.in?(EXECUTION_MODES)
@@ -48,13 +51,10 @@ module GoodJob
     # @param warn [Boolean] whether to print a warning when over the limit
     # @return [Integer]
     def self.total_estimated_threads(warn: false)
-      configuration = new({})
-
-      cron_threads = configuration.enable_cron? ? 2 : 0
-      notifier_threads = 1
+      utility_threads = GoodJob::SharedExecutor::MAX_THREADS
       scheduler_threads = GoodJob::Scheduler.instances.sum { |scheduler| scheduler.stats[:max_threads] }
 
-      good_job_threads = cron_threads + notifier_threads + scheduler_threads
+      good_job_threads = utility_threads + scheduler_threads
       puma_threads = (Puma::Server.current&.max_threads if defined?(Puma::Server)) || 0
 
       total_threads = good_job_threads + puma_threads
@@ -343,6 +343,10 @@ module GoodJob
 
     def smaller_number_is_higher_priority
       rails_config[:smaller_number_is_higher_priority]
+    end
+
+    def dashboard_default_locale
+      rails_config[:dashboard_default_locale] || DEFAULT_DASHBOARD_DEFAULT_LOCALE
     end
 
     private

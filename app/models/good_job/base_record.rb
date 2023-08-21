@@ -1,10 +1,11 @@
 # frozen_string_literal: true
+
 module GoodJob
   # Base ActiveRecord class that all GoodJob models inherit from.
   # Parent class can be configured with +GoodJob.active_record_parent_class+.
   # @!parse
   #   class BaseRecord < ActiveRecord::Base; end
-  class BaseRecord < Object.const_get(GoodJob.active_record_parent_class)
+  class BaseRecord < ActiveRecordParentClass
     self.abstract_class = true
 
     def self.migration_pending_warning!
@@ -21,10 +22,24 @@ module GoodJob
     # Can be overriden by child class.
     # @return [Boolean]
     def self.migrated?
-      return true if connection.table_exists?(table_name)
+      return true if table_exists?
 
       migration_pending_warning!
       false
     end
+
+    # Runs the block with self.logger silenced.
+    # If self.logger is nil, simply runs the block.
+    def self.with_logger_silenced(&block)
+      # Assign to a local variable, just in case it's modified in another thread concurrently
+      logger = self.logger
+      if logger
+        logger.silence(&block)
+      else
+        yield
+      end
+    end
+
+    ActiveSupport.run_load_hooks(:good_job_base_record, self)
   end
 end

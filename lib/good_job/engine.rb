@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   # Ruby on Rails integration.
   class Engine < ::Rails::Engine
@@ -19,6 +20,10 @@ module GoodJob
         GoodJob::CurrentThread.error_on_retry = event.payload[:error]
       end
 
+      ActiveSupport::Notifications.subscribe "retry_stopped.active_job" do |event|
+        GoodJob::CurrentThread.error_on_retry_stopped = event.payload[:error]
+      end
+
       ActiveSupport::Notifications.subscribe "discard.active_job" do |event|
         GoodJob::CurrentThread.error_on_discard = event.payload[:error]
       end
@@ -32,6 +37,14 @@ module GoodJob
         GoodJob.on_thread_error = rails_config[:on_thread_error] if rails_config.key?(:on_thread_error)
         GoodJob.preserve_job_records = rails_config[:preserve_job_records] if rails_config.key?(:preserve_job_records)
         GoodJob.retry_on_unhandled_error = rails_config[:retry_on_unhandled_error] if rails_config.key?(:retry_on_unhandled_error)
+      end
+    end
+
+    initializer 'good_job.active_record' do
+      config.to_prepare do
+        ActiveSupport.on_load :good_job_base_record, run_once: true do
+          GoodJob::BaseRecord.class_eval(&GoodJob._active_record_configuration) if GoodJob._active_record_configuration
+        end
       end
     end
 

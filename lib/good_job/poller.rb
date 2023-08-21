@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'concurrent/atomic/atomic_boolean'
 
 module GoodJob # :nodoc:
@@ -17,7 +18,7 @@ module GoodJob # :nodoc:
     #   @!scope class
     #   List of all instantiated Pollers in the current process.
     #   @return [Array<GoodJob::Poller>, nil]
-    cattr_reader :instances, default: [], instance_reader: false
+    cattr_reader :instances, default: Concurrent::Array.new, instance_reader: false
 
     # Creates GoodJob::Poller from a GoodJob::Configuration instance.
     # @param configuration [GoodJob::Configuration]
@@ -38,9 +39,8 @@ module GoodJob # :nodoc:
       @timer_options = DEFAULT_TIMER_OPTIONS.dup
       @timer_options[:execution_interval] = poll_interval if poll_interval.present?
 
-      self.class.instances << self
-
       create_timer
+      self.class.instances << self
     end
 
     # Tests whether the timer is running.

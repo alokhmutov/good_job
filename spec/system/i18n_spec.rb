@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 describe 'I18n Internationalization', js: true do
@@ -20,7 +21,7 @@ describe 'I18n Internationalization', js: true do
       expect(page).to have_content "Processes"
       find_by_id('localeOptions').click
       within ".navbar" do
-        click_on "ua"
+        click_on "uk"
       end
       expect(page).to have_content "Процеси"
     end

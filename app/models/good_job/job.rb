@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   # ActiveRecord model that represents an +ActiveJob+ job.
   # There is not a table in the database whose discrete rows represents "Jobs".
@@ -6,10 +7,6 @@ module GoodJob
   # A single row from the +good_jobs+ table of executions is fetched to represent a Job.
   #
   class Job < BaseExecution
-    include Filterable
-    include Lockable
-    include Reportable
-
     # Raised when an inappropriate action is applied to a Job based on its state.
     ActionForStateMismatchError = Class.new(StandardError)
     # Raised when an action requires GoodJob to be the ActiveJob Queue Adapter but GoodJob is not.
@@ -148,6 +145,12 @@ module GoodJob
                               })
     end
 
+    # Used when displaying this job in the GoodJob dashboard.
+    # @return [String]
+    def display_name
+      job_class
+    end
+
     # Tests whether the job is being executed right now.
     # @return [Boolean]
     def running?
@@ -198,6 +201,7 @@ module GoodJob
 
           execution.class.transaction(joinable: false, requires_new: true) do
             new_active_job = active_job.retry_job(wait: 0, error: execution.error)
+            execution.error_event = ERROR_EVENT_RETRIED if execution.error && execution.class.error_event_migrated?
             execution.save!
           end
         end
@@ -220,8 +224,12 @@ module GoodJob
 
         update_execution = proc do
           execution.update(
-            finished_at: Time.current,
-            error: GoodJob::Execution.format_error(job_error)
+            {
+              finished_at: Time.current,
+              error: GoodJob::Execution.format_error(job_error),
+            }.tap do |attrs|
+              attrs[:error_event] = ERROR_EVENT_DISCARDED if self.class.error_event_migrated?
+            end
           )
         end
 

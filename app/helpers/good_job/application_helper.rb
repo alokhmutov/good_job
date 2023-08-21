@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   module ApplicationHelper
     def format_duration(sec)
@@ -63,7 +64,6 @@ module GoodJob
     end
 
     def translation_exists?(key, **options)
-      true if good_job_available_locales.include?(I18n.locale)
       I18n.exists?(scope_key_by_partial(key), **options)
     end
   end

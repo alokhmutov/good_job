@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe GoodJob::Configuration do
@@ -8,7 +9,7 @@ RSpec.describe GoodJob::Configuration do
     end
 
     it 'counts up the total estimated threads' do
-      expect(described_class.total_estimated_threads).to eq 1
+      expect(described_class.total_estimated_threads).to eq 2
     end
 
     it 'outputs a warning message' do
@@ -277,6 +278,14 @@ RSpec.describe GoodJob::Configuration do
       allow(Rails.application.config).to receive(:good_job).and_return({ smaller_number_is_higher_priority: true })
       configuration = described_class.new({})
       expect(configuration.smaller_number_is_higher_priority).to be true
+    end
+  end
+
+  describe '#dashboard_default_locale' do
+    it 'delegates to rails configuration' do
+      allow(Rails.application.config).to receive(:good_job).and_return({ dashboard_default_locale: :de })
+      configuration = described_class.new({})
+      expect(configuration.dashboard_default_locale).to eq :de
     end
   end
 end

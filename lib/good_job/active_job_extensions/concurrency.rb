@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   module ActiveJobExtensions
     module Concurrency
@@ -92,7 +93,7 @@ module GoodJob
         key = self.class.good_job_concurrency_config[:key]
         return if key.blank?
 
-        key = key.respond_to?(:call) ? instance_exec(&key) : key
+        key = instance_exec(&key) if key.respond_to?(:call)
         raise TypeError, "Concurrency key must be a String; was a #{key.class}" unless VALID_TYPES.any? { |type| key.is_a?(type) }
 
         key

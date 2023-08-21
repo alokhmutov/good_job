@@ -1,9 +1,7 @@
 # frozen_string_literal: true
+
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
-
-ruby_version = ENV.fetch('GEMFILE_RUBY_VERSION', nil)
-ruby ruby_version if ruby_version
 
 # Declare your gem's dependencies in good_job.gemspec.
 # Bundler will treat runtime dependencies like base dependencies, and
@@ -20,7 +18,12 @@ gem 'appraisal', github: 'thoughtbot/appraisal', branch: 'main'
 gem 'matrix'
 gem 'nokogiri'
 gem 'pg', platforms: [:mri, :mingw, :x64_mingw]
+gem 'rack', '~> 2.2'
 gem 'rails'
+gem "sorbet", group: :development
+gem "sorbet-runtime"
+gem "spoom", require: false, group: :development
+gem "tapioca", require: false, group: :development
 
 platforms :ruby do
   gem "activerecord-explain-analyze", require: false

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module GoodJob
   #
   # ActiveJob Adapter.
@@ -8,7 +9,7 @@ module GoodJob
     #   @!scope class
     #   List of all instantiated Adapters in the current process.
     #   @return [Array<GoodJob::Adapter>, nil]
-    cattr_reader :instances, default: [], instance_reader: false
+    cattr_reader :instances, default: Concurrent::Array.new, instance_reader: false
 
     # @param execution_mode [Symbol, nil] specifies how and where jobs should be executed. You can also set this with the environment variable +GOOD_JOB_EXECUTION_MODE+.
     #
@@ -29,8 +30,8 @@ module GoodJob
       GoodJob::Configuration.validate_execution_mode(@_execution_mode_override) if @_execution_mode_override
       @capsule = _capsule
 
-      self.class.instances << self
       start_async if GoodJob.async_ready?
+      self.class.instances << self
     end
 
     # Enqueues the ActiveJob job to be performed.
@@ -63,7 +64,15 @@ module GoodJob
 
       inline_executions = []
       GoodJob::Execution.transaction(requires_new: true, joinable: false) do
-        results = GoodJob::Execution.insert_all(executions.map(&:attributes), returning: %w[id active_job_id]) # rubocop:disable Rails/SkipsModelValidations
+        execution_attributes = executions.map do |execution|
+          if GoodJob::Execution.error_event_migrated?
+            execution.attributes
+          else
+            execution.attributes.except('error_event')
+          end
+        end
+
+        results = GoodJob::Execution.insert_all(execution_attributes, returning: %w[id active_job_id]) # rubocop:disable Rails/SkipsModelValidations
 
         job_id_to_provider_job_id = results.each_with_object({}) { |result, hash| hash[result['active_job_id']] = result['id'] }
         active_jobs.each do |active_job|

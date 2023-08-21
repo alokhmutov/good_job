@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 require 'net/http'
 
@@ -11,7 +12,7 @@ RSpec.describe GoodJob::ProbeServer do
   end
 
   describe '#start' do
-    it 'starts a webrick server that binds to all interfaces' do
+    it 'starts a http server that binds to all interfaces' do
       probe_server.start
       wait_until(max: 1) { expect(probe_server).to be_running }
 
@@ -23,6 +24,15 @@ RSpec.describe GoodJob::ProbeServer do
         ip_addresses.each do |ip_address|
           response = Net::HTTP.get(ip_address, "/", port)
           expect(response).to eq("OK")
+
+          response = Net::HTTP.get(ip_address, "/status", port)
+          expect(response).to eq("OK")
+
+          response = Net::HTTP.get(ip_address, "/status/started", port)
+          expect(response).to eq("Not started")
+
+          response = Net::HTTP.get(ip_address, "/status/connected", port)
+          expect(response).to eq("Not connected")
         end
       end
     end

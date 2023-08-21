@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe GoodJob::Job do
@@ -103,6 +104,23 @@ RSpec.describe GoodJob::Job do
     end
   end
 
+  describe '#reload' do
+    it 'reloads the job execution' do
+      job = undiscrete_job
+      original_head_execution = job.head_execution
+
+      new_execution = GoodJob::Execution.create!(
+        active_job_id: job.active_job_id,
+        queue_name: 'newnewnew'
+      )
+      original_head_execution.update!(retried_good_job_id: new_execution.id)
+
+      expect do
+        job.reload
+      end.to change { job.queue_name }.from('mice').to('newnewnew')
+    end
+  end
+
   describe '#head_execution' do
     it 'is the head execution (which should be the same record)' do
       job = undiscrete_job
@@ -202,6 +220,11 @@ RSpec.describe GoodJob::Job do
           job.retry_job
         end.to change { job.reload.finished? }.from(true).to(false)
         expect(job.executions.count).to eq 1
+
+        expect(job).to have_attributes(
+          error: "TestJob::Error: TestJob::Error",
+          error_event: "retried"
+        )
       end
 
       context 'when job is not discrete' do
@@ -242,7 +265,7 @@ RSpec.describe GoodJob::Job do
         job.with_advisory_lock do
           expect do
             Concurrent::Promises.future(job, &:retry_job).value!
-          end.to raise_error GoodJob::Lockable::RecordAlreadyAdvisoryLockedError
+          end.to raise_error GoodJob::AdvisoryLockable::RecordAlreadyAdvisoryLockedError
         end
       end
     end
@@ -264,6 +287,7 @@ RSpec.describe GoodJob::Job do
 
         expect(job.head_execution(reload: true)).to have_attributes(
           error: "GoodJob::Job::DiscardJobError: Discarded in test",
+          error_event: "discarded",
           finished_at: within(1.second).of(Time.current)
         )
       end

@@ -1,6 +1,7 @@
 inherit_from: .rubocop_todo.yml
 
 require:
+  - rubocop-capybara
   - rubocop-performance
   - rubocop-rails
   - rubocop-rspec
@@ -21,17 +22,18 @@ AllCops:
     - pkg/**/*
     - spec/test_app/**/*
     - tmp/**/*
-    - vendor/**/*
     - scripts/**/*
     - gemfiles/**/*
     - Brewfile
+    # Vendored dependencies
+    - lib/good_job/sd_notify.rb
   NewCops: enable
 
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
 Layout/EmptyLineAfterMagicComment:
-  Enabled: false
+  Enabled: true
 
 Layout/HashAlignment:
   Enabled: false
@@ -43,6 +45,9 @@ Layout/ParameterAlignment:
   EnforcedStyle: with_fixed_indentation
 
 Lint/AmbiguousBlockAssociation:
+  Enabled: false
+
+Lint/IncompatibleIoSelectWithFiberScheduler:
   Enabled: false
 
 Metrics:
@@ -77,11 +82,17 @@ Rails/SkipsModelValidations:
 RSpec/AnyInstance:
   Enabled: false
 
+RSpec/BeEq:
+  Enabled: false
+
 RSpec/DescribeClass:
   Exclude:
     - spec/integration/*
 
 RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/IndexedLet:
   Enabled: false
 
 RSpec/LetSetup:
